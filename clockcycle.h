@@ -2,7 +2,7 @@
 #define CLOCKCYCLE_H
 
 #include <stdint.h>
-
+/*
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -17,7 +17,7 @@ static inline uint64_t clock_now() {
 static inline uint64_t clock_now() {
 	return __rdtsc();
 }
-#else
+#else*/
 uint64_t clock_now(void)
 {
   unsigned int tbl, tbu0, tbu1;
@@ -29,12 +29,11 @@ uint64_t clock_now(void)
   } while (tbu0 != tbu1);
 
   return (((uint64_t)tbu0) << 32) | tbl;
-}
+}/*
 #endif
 #endif
-  
 #ifdef __cplusplus
 }
 #endif // __cplusplus
-
+*/
 #endif // CLOCKCYCLE_H

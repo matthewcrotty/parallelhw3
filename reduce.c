@@ -1,5 +1,6 @@
 #include "clockcycle.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <mpi.h>
 
 int MPI_P2P_Reduce(const void* send_buffer, void* receive_buffer, int count, MPI_Datatype datatype, MPI_Op operation, int root, MPI_Comm communicator){
