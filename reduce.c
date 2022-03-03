@@ -12,9 +12,10 @@ int MPI_P2P_Reduce(const void* send_buffer, void* receive_buffer, int count, MPI
     // compute sum when implemented
     long long int sum = *(long long int*)send_buffer;
 
+    // boolean to prevent deadlocks in loop
     int still_working = 1;
     for(int stride = 1; stride < world_size-1; stride *= 2){
-        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD); // Ensure data dependence saftey
         if(still_working == 0){
             continue;
         }
@@ -31,7 +32,8 @@ int MPI_P2P_Reduce(const void* send_buffer, void* receive_buffer, int count, MPI
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
-    if(my_rank == 0){
+    // Write output in root rank
+    if(my_rank == root){
         *(long long int*)receive_buffer = sum;
     }
 
@@ -57,6 +59,7 @@ int main(int argc, char **argv){
     long long int local_sum;
     unsigned long long start_time;
     unsigned long long end_time;
+    double time_in_secs
 
     // Determine how many elements are in each block
     if(world_rank == world_size-1){
@@ -73,34 +76,34 @@ int main(int argc, char **argv){
 
     MPI_Barrier(MPI_COMM_WORLD);
 
+    // Timing P2P including summation
     start_time = clock_now();
     local_sum = 0;
     for(int i = 0; i < num_elements; i++){
         local_sum += input_data[i];
     }
-    MPI_Barrier(MPI_COMM_WORLD);
     MPI_P2P_Reduce(&local_sum, &receive_data, 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
     end_time = clock_now();
 
-    double time_in_secs = ((double)(end_time - start_time)) / clock_frequency;
-
+    // Output results
     if(world_rank == 0){
+        time_in_secs = ((double)(end_time - start_time)) / clock_frequency;
         printf("%llu %f\n", receive_data, time_in_secs);
     }
 
+    // Timing MPI_Reduce including summation
     long long int result = 0;
     start_time = clock_now();
     local_sum = 0;
     for(int i = 0; i < num_elements; i++){
         local_sum += input_data[i];
     }
-    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Reduce(&local_sum, &result, 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
     end_time = clock_now();
 
-    time_in_secs = ((double)(end_time - start_time)) / clock_frequency;
-
+    // Output stats
     if(world_rank == 0){
+        time_in_secs = ((double)(end_time - start_time)) / clock_frequency;
         printf("%llu %f\n", receive_data, time_in_secs);
     }
 
