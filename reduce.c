@@ -3,32 +3,54 @@
 #include <mpi.h>
 
 int MPI_P2P_Reduce(const void* send_buffer, void* receive_buffer, int count, MPI_Datatype datatype, MPI_Op operation, int root, MPI_Comm communicator){
-    printf("Rank %d\n", root);
-    if(root == 0){
-        for(int i = 1; i < count+1; i++){
-            // Somehow this function needs to run in parallel.
-            MPI_P2P_Reduce(send_buffer, receive_buffer, count, datatype, operation, i, communicator);
+    int my_rank;
+    MPI_Comm_rank(communicator, &my_rank);
+    int world_size;
+    MPI_Comm_size(communicator, &world_size);
+    //printf("in p2p Rank %d\n", my_rank);
+
+    // compute sum when implemented
+    long long sum = 0;
+
+    for(int stride = 1; stride < world_size-1; stride *= 2){
+        if(my_rank % (2*stride) != 0){
+            printf("%d sends to %d\n", my_rank, my_rank-stride);
+            MPI_Request request;
+            MPI_Isend(send_buffer, 1, datatype, my_rank-stride, 0, communicator, &request);
+            break;
+        } else{
+            printf("%d receives from %d\n", my_rank, my_rank+stride);
+            MPI_Request request;
+            long long data;
+            MPI_Irecv(&data, 1, datatype, my_rank+stride, 0, communicator, &request);
         }
-    } else {
-        // Loop, where each iteration increase stride by x2
-        // Send from 1 stride away
-        // Receive from every stride+1
-        // Until last, then return to rank 0
-        return 1;
     }
+
     return 1;
 }
 
-int main(){
+int main(int argc, char **argv){
+    MPI_Init(&argc, &argv);
 
-// 1 billion longs
-// Somehow initzalise this data so each rank receives it.
-long long int* input_data;
-long long int* receive_data;
+    int world_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-unsigned long long start_time = clock_now();
-MPI_P2P_Reduce(&input_data, &receive_data, 4, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
-unsigned long long end_time = clock_now();
+    int world_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-printf("Completed in %llu cycles\n", (end_time - start_time));
+    printf("Size %d, rank %d\n", world_size, world_rank);
+    if(world_rank == 0){
+
+    }
+    // 1 billion longs
+    // Somehow initzalise this data so each rank receives it.
+    long long int* input_data;
+    long long int* receive_data;
+
+    unsigned long long start_time = clock_now();
+    MPI_P2P_Reduce(&input_data, &receive_data, 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+    unsigned long long end_time = clock_now();
+
+    printf("Completed in %llu cycles\n", (end_time - start_time));
+    MPI_Finalize();
 }
