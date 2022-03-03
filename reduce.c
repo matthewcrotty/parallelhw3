@@ -59,7 +59,7 @@ int main(int argc, char **argv){
     long long int local_sum;
     unsigned long long start_time;
     unsigned long long end_time;
-    double time_in_secs
+    double time_in_secs;
 
     // Determine how many elements are in each block
     if(world_rank == world_size-1){
